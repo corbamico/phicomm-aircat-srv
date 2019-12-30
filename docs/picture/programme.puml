@@ -1,0 +1,41 @@
+@startuml programme
+!include <c4/C4_Container.puml>
+
+Person(manager,"manager")
+Person(user,"user")
+Person(device,"device")
+
+
+
+System_Boundary(phicommaircatsrv, "phicomm-aircat-srv"){
+    Container(main,"main.go","golang")
+    'Container(conf,"config.go","golang")
+    Container(aircatsrv,"aircatsrv.go","go-rountine")
+    Container(restsrv,"restsrv.go","go-rountine")
+    Container(message,"message.go","golang") 
+    Container(output,"influxdb.go","golang") 
+    'Rel(main, conf,"use")
+    Rel(main, aircatsrv,"load")
+    'Rel(aircatsrv, conf,"use")
+    Rel(aircatsrv, restsrv,"load\ngo-rountine")
+    Rel(aircatsrv, message,"use")
+    Rel(aircatsrv, output,"use")
+    
+}
+
+    System_Ext(influxdb, "influxdb")
+    System_Ext(grafana, "grafana")
+
+interface port as "port 9000"
+aircatsrv-port
+
+Rel(device, port, "report", "TCP/9000")
+Rel(manager, main, "run")
+Rel(user, phicommaircatsrv, "read/control", "REST")
+
+Rel(output, influxdb, "output", "REST")
+Rel(grafana, influxdb, "show", "REST")
+
+
+
+@enduml
