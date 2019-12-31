@@ -41,6 +41,8 @@ GOOS=linux GOARCH=mipsle go build github.com/corbamico/phicomm-aircat-srv/server
 
 ## Reference
 
+![arch](docs/picture/programme.png)
+
 ## Todo
 
 * [x] Serv at 9000

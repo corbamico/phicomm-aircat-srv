@@ -31,7 +31,7 @@ aircatsrv-port
 
 Rel(device, port, "report", "TCP/9000")
 Rel(manager, main, "run")
-Rel(user, phicommaircatsrv, "read/control", "REST")
+Rel(user, phicommaircatsrv, "GET/PUT", "REST")
 
 Rel(output, influxdb, "output", "REST")
 Rel(grafana, influxdb, "show", "REST")
