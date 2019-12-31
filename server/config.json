@@ -1,0 +1,4 @@
+{
+    "ServerAddr": ":9000",
+    "RESTerverAddr": "localhost:8080"
+}
