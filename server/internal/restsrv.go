@@ -35,8 +35,8 @@ func (s *restServer) setAircatServer(aircatServer *AircatServer) {
 func (s *restServer) Run() {
 	go func() {
 		http.HandleFunc("/v1/aircat", handlerFunc(s))
-		log.Printf("REST Server run at %s\n", configs.RESTerverAddr)
-		log.Fatalln(http.ListenAndServe(configs.RESTerverAddr, nil))
+		log.Printf("REST Server run at %s\n", configs.RESTServerAddr)
+		log.Fatalln(http.ListenAndServe(configs.RESTServerAddr, nil))
 	}()
 }
 

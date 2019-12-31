@@ -122,7 +122,12 @@ func (client *aircatDevice) cleanup() {
 	}
 }
 func (client *aircatDevice) sendControl(json string) {
-	client.conn.Write(client.msg.controlMsg(json))
+	bytes := client.msg.controlMsg(json)
+	client.conn.Write(bytes)
+	// log.Println("\n", hex.Dump(bytes))
+	// if n, err := client.conn.Write(bytes); err == nil {
+	// 	log.Printf("send control message (size=%d)\n", n)
+	// }
 }
 
 //Config for running programme
@@ -132,7 +137,7 @@ func (client *aircatDevice) sendControl(json string) {
 //}
 type Config struct {
 	ServerAddr     string //default as ":9000"
-	RESTerverAddr  string //default as ":8080"
+	RESTServerAddr string //default as ":8080"
 	Influxdb       bool
 	InfluxdbServer string //default as "localhost:8086"
 }
@@ -153,8 +158,8 @@ func LoadConfig(file string) error {
 	if configs.ServerAddr == "" {
 		configs.ServerAddr = ":9000"
 	}
-	if configs.RESTerverAddr == "" {
-		configs.RESTerverAddr = ":8080"
+	if configs.RESTServerAddr == "" {
+		configs.RESTServerAddr = ":8080"
 	}
 	// if configs.InfluxdbServer == "" {
 	// 	configs.InfluxdbServer = "localhost:8086"

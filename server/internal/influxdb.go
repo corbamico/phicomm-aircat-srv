@@ -26,7 +26,9 @@ func (s *influxdb) write(mac string, json string) {
 	}
 	if line := formatLineProtocol(mac, json); line != "" {
 		//we ignore error
-		http.Post(fmt.Sprintf("http://%s/write?db=aircat", s.addr), "", strings.NewReader(line))
+		go func() {
+			http.Post(fmt.Sprintf("http://%s/write?db=aircat", s.addr), "", strings.NewReader(line))
+		}()
 	}
 
 }
@@ -35,13 +37,13 @@ func formatLineProtocol(mac string, js string) string {
 	if err := json.Unmarshal([]byte(js), &air); err != nil {
 		return ""
 	}
-	return fmt.Sprintf("aircat,mac=\"%s\" humidity=%.2f,temperature=%.2f,value=%d,hcho=%d", mac, air.Humidity, air.Temperature, air.Value, air.Hcho)
+	return fmt.Sprintf("aircat,mac=\"%s\" humidity=%s,temperature=%s,value=%s,hcho=%s", mac, air.Humidity, air.Temperature, air.Value, air.Hcho)
 }
 
 //AirMeasure reported from device
 type AirMeasure struct {
-	Humidity    float32
-	Temperature float32
-	Value       uint8
-	Hcho        uint8
+	Humidity    string
+	Temperature string
+	Value       string
+	Hcho        string
 }
