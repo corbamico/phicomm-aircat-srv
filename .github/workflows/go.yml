@@ -14,4 +14,4 @@ jobs:
       id: go
 
     - name: Build
-      run: go get -v -u github.com/corbamico/phicomm-aircat-srv/server
+      run: go get -v -u github.com/corbamico/phicomm-aircat-srv/aircat-srv-go

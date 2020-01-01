@@ -36,7 +36,7 @@ curl http://localhost:8080/v1/aircat
 You can run *phicomm-aircat-srv* in router(ex. Phicomm k2p),too.
 
 ```shell
-GOOS=linux GOARCH=mipsle go build github.com/corbamico/phicomm-aircat-srv/server
+GOOS=linux GOARCH=mipsle go build github.com/corbamico/phicomm-aircat-srv/aircat-srv
 ```
 
 ## Reference
