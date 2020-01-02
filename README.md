@@ -18,6 +18,8 @@ A Server serv at port 9000 for phicomm wukong m1 aircat, after you hijack DNS ai
 
 ## Usage
 
+### Basic Usage
+
 * Change brightness  
 you can change brightness for (0,25,50,100)
 
@@ -29,6 +31,13 @@ curl -XPUT http://localhost:8080/v1/aircat  --data  "{\"brightness\":\"100\",\"t
 
 ```shell
 curl http://localhost:8080/v1/aircat
+```
+
+### Run in docker
+
+```shell
+cd docker
+docker-compose up -d
 ```
 
 ## Compile&Run on router
@@ -48,6 +57,6 @@ GOOS=linux GOARCH=mipsle go build github.com/corbamico/phicomm-aircat-srv/aircat
 * [x] Serv at 9000
 * [x] REST Serv for changing brightness
 * [x] Output to influxDB
-* [ ] docker-compose.yaml for influxDB/grafana
+* [x] docker-compose.yaml for influxDB/grafana
 * [ ] default dashboard for grafana docker
 * [ ] support more than one device

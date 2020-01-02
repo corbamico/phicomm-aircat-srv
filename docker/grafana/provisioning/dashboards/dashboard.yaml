@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+- name: 'aircat dashboard'
+  orgId: 1
+  folder: ''
+  folderUid: ''
+  type: file
+  editable: true
+  options:
+    path: /etc/grafana/provision/dashboards/
