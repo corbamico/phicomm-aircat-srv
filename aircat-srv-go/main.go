@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/corbamico/phicomm-aircat-srv/aircat-srv-go/internal"
+	"github.com/corbamico/phicomm-aircat-srv/aircat-srv-go/internal/aircat"
 	"log"
 )
 
 func main() {
-	if err := internal.LoadConfig("config.json"); err != nil {
+	if err := aircat.LoadConfig("config.json"); err != nil {
 		log.Fatalln(err)
 	}
-	s := internal.NewAircatServer()
+	s := aircat.NewAircatServer()
 	s.Run()
 	return
 }

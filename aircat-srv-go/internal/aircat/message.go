@@ -1,4 +1,4 @@
-package internal
+package aircat
 
 import (
 	"bytes"
