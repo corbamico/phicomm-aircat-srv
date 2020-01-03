@@ -40,6 +40,10 @@ cd docker
 docker-compose up -d
 ```
 
+login in your grafana web at <http://localhost:3000> with (admin/admin), enjoy it.  
+
+![screen](docs/picture/screen-1.jpg)
+
 ## Compile&Run on router
 
 You can run *phicomm-aircat-srv* in router(ex. Phicomm k2p),too.
@@ -58,5 +62,6 @@ GOOS=linux GOARCH=mipsle go build github.com/corbamico/phicomm-aircat-srv/aircat
 * [x] REST Serv for changing brightness
 * [x] Output to influxDB
 * [x] docker-compose.yaml for influxDB/grafana
-* [ ] default dashboard for grafana docker
+* [x] default dashboard for grafana docker
 * [ ] support more than one device
+* [ ] version for aircat-srv-rs

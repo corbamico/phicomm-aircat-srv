@@ -1,40 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_INFLUXDB",
-      "label": "InfluxDB",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "influxdb",
-      "pluginName": "InfluxDB"
-    }
-  ],
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "6.5.2"
-    },
-    {
-      "type": "panel",
-      "id": "graph",
-      "name": "Graph",
-      "version": ""
-    },
-    {
-      "type": "datasource",
-      "id": "influxdb",
-      "name": "InfluxDB",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "singlestat",
-      "name": "Singlestat",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -51,7 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": null,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -64,7 +28,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": null,
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -180,7 +144,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#F2495C"
       ],
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "InfluxDB",
       "decimals": 1,
       "format": "degree",
       "gauge": {
@@ -297,7 +261,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": null,
       "decimals": 2,
       "format": "none",
       "gauge": {
@@ -420,7 +384,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": null,
       "decimals": 1,
       "format": "none",
       "gauge": {
@@ -532,7 +496,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "InfluxDB",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -650,7 +614,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "InfluxDB",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -768,7 +732,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "InfluxDB",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -886,7 +850,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "InfluxDB",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
