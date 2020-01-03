@@ -1,7 +1,7 @@
 version: '3'
 services: 
   aircat-srv:
-    build: ./aircat-srv
+    build: ..
     container_name: aircat-srv
     ports: 
       - "8080:8080"
