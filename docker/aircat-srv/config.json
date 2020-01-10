@@ -1,0 +1,5 @@
+{
+    "ServerAddr": ":9000",
+    "RESTServerAddr": ":8080",
+    "InfluxdbServer": "influxdb:8086"
+}

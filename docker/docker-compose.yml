@@ -1,7 +1,8 @@
 version: '3'
 services: 
   aircat-srv:
-    build: ./aircat-srv
+    build: ..
+    image: aircat-srv
     container_name: aircat-srv
     ports: 
       - "8080:8080"
@@ -14,7 +15,7 @@ services:
     volumes: 
       - ./influxdb:/var/lib/influxdb
     ports:
-      - "127.0.0.1:8086:8086"      
+      - "8086:8086"      
   grafana:
     image: grafana/grafana
     container_name: grafana

@@ -27,10 +27,16 @@ you can change brightness for (0,25,50,100)
 curl -XPUT http://localhost:8080/v1/aircat  --data  "{\"brightness\":\"100\",\"type\":2}"
 ```
 
-* Query current air measurement
+* Query latest air measurement
 
 ```shell
 curl http://localhost:8080/v1/aircat
+```
+
+* Control device to report current air measurement
+
+```shell
+curl -XPUT http://localhost:8080/v1/aircat  --data  "{\"type\":5,\"status\":1}"
 ```
 
 ### Run in docker
