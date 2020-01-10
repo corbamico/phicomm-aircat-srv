@@ -1,0 +1,5 @@
+{
+    "ServerAddr": "127.0.0.1:9000",
+    "RESTServerAddr": "127.0.0.1:8080",
+    "InfluxdbServer": "localhost:8086"
+}
