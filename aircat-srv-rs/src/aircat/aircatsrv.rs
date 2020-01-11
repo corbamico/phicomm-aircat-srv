@@ -57,7 +57,11 @@ async fn process_client(
     let first_packet_clone = first_packet.clone();
     let reader = async move {
         FramedRead::new(rd, message::AirCatFramedCodec::new())
-            .filter_map(|p| ready(p.ok()))
+            .take_while(|p| futures::future::ready(p.is_ok()))
+            .filter_map(|p| {
+                println!("[debug]filter_map,parameter={:?}", p);
+                ready(p.ok())
+            })
             .filter(|p| {
                 let filted = p.msg_type == 4 && !p.json.is_empty();
                 {
@@ -69,7 +73,7 @@ async fn process_client(
                         *first = Some(p.clone());
                     }
                 }
-                ready(filted)
+                ready(!filted)
             })
             .for_each(|p| {
                 influxdb::send_json(influxdb_addr, hex::encode(&p.mac[1..7]), p.json).map(|_| ())

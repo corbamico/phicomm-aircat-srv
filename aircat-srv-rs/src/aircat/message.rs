@@ -1,7 +1,7 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use std::io;
-use tokio_util::codec::{Decoder, Encoder, LengthDelimitedCodec};
+use tokio_util::codec::{Decoder, Encoder};
 
 /*Framed show as
    00 01 02 03 04 05 06 07   08  09 10 11  12 13 14 15
@@ -9,64 +9,76 @@ use tokio_util::codec::{Decoder, Encoder, LengthDelimitedCodec};
 16 ---------MAC-----------   len 00 00 typ ----json---
 24 FF 23 45 4E 44 23
 */
-#[derive(Default, Clone)]
+//current we set max_frame_length = 150 for safe.
+#[derive(Debug, Default, Clone)]
 pub struct AirCatPacket {
     pub device_fixed: [u8; 16],
     pub msg_type: u8, //1:active,2:control,4:report
     pub mac: [u8; 8],
-    pub json: String,
+    pub json: Bytes,
 }
 
-#[allow(dead_code)]
-pub struct AirCatFramedCodec {
-    codec: LengthDelimitedCodec,
+impl AirCatPacket {
+    const MIN_PACKET_LENGTH: usize = 33;
+    fn from(src: BytesMut) -> io::Result<AirCatPacket> {
+        let b = src.bytes();
+        if b.len() < AirCatPacket::MIN_PACKET_LENGTH {
+            return Err(io::Error::from(io::ErrorKind::InvalidData));
+        }
+
+        let begin: usize = 28;
+        let end: usize = 28usize - 3usize + b[24] as usize;
+
+        if !(begin <= end && end <= b.len()) {
+            return Err(io::Error::from(io::ErrorKind::InvalidData));
+        }
+        Ok(AirCatPacket::new(
+            &b[0..16],
+            b[27],
+            &b[16..24],
+            &b[begin..end],
+        ))
+    }
+    fn new(device_fixed: &[u8], msg_type: u8, mac: &[u8], json: &[u8]) -> AirCatPacket {
+        let mut a = AirCatPacket::default();
+        a.device_fixed.copy_from_slice(device_fixed);
+        a.msg_type = msg_type;
+        a.mac.copy_from_slice(mac);
+        a.json = Bytes::copy_from_slice(json);
+        a
+    }
 }
+
+//#[allow(dead_code)]
+pub struct AirCatFramedCodec;
 
 impl AirCatFramedCodec {
     pub fn new() -> AirCatFramedCodec {
-        AirCatFramedCodec {
-            codec: LengthDelimitedCodec::builder()
-                .length_field_offset(24)
-                .length_field_length(1)
-                .length_adjustment(31)
-                .num_skip(0)
-                .new_codec(),
-        }
+        AirCatFramedCodec {}
     }
 }
 
 impl Decoder for AirCatFramedCodec {
     type Item = AirCatPacket;
     type Error = io::Error;
+    /// We always read whole one packet from src: BytesMut    
     fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<AirCatPacket>> {
-        use std::convert::TryInto;
-        self.codec.decode(src).map(|x| match x {
-            None => None,
-            Some(b) => {
-                let b = b.bytes();
-                let mut air: AirCatPacket = Default::default();
-                air.device_fixed.copy_from_slice(&b[0..16]);
-                air.mac.copy_from_slice(&b[16..24]);
-                air.msg_type = b[27];
-                let begin: usize = 28;
-                let end: usize = b[24].try_into().unwrap();
-                let end: usize = 28usize - 3usize + end;
-                if let Ok(s) = String::from_utf8(b[begin..end].to_vec()) {
-                    air.json = s;
-                    Some(air)
-                } else {
-                    None
-                }
-            }
-        })
+        //println!("[debug]decode,parameter BytesMut={:?}", src);
+        if src.len() <= 0 {
+            //wait read more from FramedRead...
+            Ok(None)
+        } else {
+            //always eat all bytes in read buffer.
+            let bytes_mut = src.split_to(src.len());
+            AirCatPacket::from(bytes_mut).map(Some)
+        }
     }
 }
 impl Encoder for AirCatFramedCodec {
     type Item = Bytes;
     type Error = io::Error;
     fn encode(&mut self, _data: Bytes, _dst: &mut BytesMut) -> io::Result<()> {
-        //unimplemented!()
-        self.codec.encode(_data, _dst)
+        unimplemented!()
     }
 }
 
