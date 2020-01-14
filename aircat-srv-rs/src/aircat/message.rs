@@ -20,6 +20,7 @@ pub struct AirCatPacket {
 
 impl AirCatPacket {
     const MIN_PACKET_LENGTH: usize = 33;
+    const _MAX_PACKET_LENGTH: usize = 156;
     fn from(src: BytesMut) -> io::Result<AirCatPacket> {
         let b = src.bytes();
         if b.len() < AirCatPacket::MIN_PACKET_LENGTH {
@@ -63,13 +64,14 @@ impl Decoder for AirCatFramedCodec {
     type Error = io::Error;
     /// We always read whole one packet from src: BytesMut    
     fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<AirCatPacket>> {
-        //println!("[debug]decode,parameter BytesMut={:?}", src);
         if src.len() <= 0 {
             //wait read more from FramedRead...
+            //src.reserve(AirCatPacket::MAX_PACKET_LENGTH);
             Ok(None)
         } else {
             //always eat all bytes in read buffer.
             let bytes_mut = src.split_to(src.len());
+            //src.reserve(AirCatPacket::MAX_PACKET_LENGTH);
             AirCatPacket::from(bytes_mut).map(Some)
         }
     }

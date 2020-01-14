@@ -2,9 +2,10 @@ use crate::aircat::influxdb;
 use crate::aircat::message;
 use bytes::{Buf, Bytes};
 
-use futures::future::{join, ready};
+use futures::future::{ready, select};
 use futures_util::future::FutureExt;
 use futures_util::stream::StreamExt;
+use pin_utils::pin_mut;
 
 use hex;
 use serde::{Deserialize, Serialize};
@@ -42,7 +43,10 @@ pub async fn run_aircat_srv(c: &Config, mut _rx: mpsc::Receiver<Message>) -> io:
         let watch_rx = watch_rx.clone();
 
         println!("aircat client connect at {}", client_addr);
-        tokio::spawn(async move { process_client(socket, &influxdb_addr, watch_rx).await });
+        tokio::spawn(async move {
+            process_client(socket, &influxdb_addr, watch_rx).await;
+            println!("aircat client disconnect, which at {}", client_addr);
+        });
     }
 }
 
@@ -59,7 +63,7 @@ async fn process_client(
         FramedRead::new(rd, message::AirCatFramedCodec::new())
             .take_while(|p| futures::future::ready(p.is_ok()))
             .filter_map(|p| {
-                println!("[debug]filter_map,parameter={:?}", p);
+                //println!("[debug]filter_map,parameter={:?}", p);
                 ready(p.ok())
             })
             .filter(|p| {
@@ -84,7 +88,7 @@ async fn process_client(
     let writer = async move {
         loop {
             let got = watch_rx.recv().await;
-            println!("watch recv {:?}", got);
+            //println!("watch recv {:?}", got);
             if let Some(Message::Control(msg)) = got {
                 let mut bytes: Bytes = Bytes::default();
                 {
@@ -101,8 +105,9 @@ async fn process_client(
             }
         }
     };
-
-    join(reader, writer).await;
+    pin_mut!(reader);
+    pin_mut!(writer);
+    select(reader, writer).await;
 }
 
 #[allow(non_snake_case)]
