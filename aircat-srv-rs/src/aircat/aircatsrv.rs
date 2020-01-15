@@ -24,6 +24,12 @@ use tokio::{
 };
 use tokio_util::codec::FramedRead;
 
+//TODO:
+//Current, we just record last json reported from device (if there are more than one device)
+lazy_static! {
+    pub static ref LAST_JSON: Arc<RwLock<Bytes>> = Arc::new(Default::default());
+}
+
 pub async fn run_aircat_srv(c: &Config, mut _rx: mpsc::Receiver<Message>) -> io::Result<()> {
     let mut listener = TcpListener::bind(&c.ServerAddr).await?;
     println!("aircat run at {}", &c.ServerAddr);
@@ -57,7 +63,6 @@ async fn process_client(
 ) {
     let (rd, mut wr) = socket.split();
     let first_packet: Arc<RwLock<Option<message::AirCatPacket>>> = Arc::new(Default::default());
-
     let first_packet_clone = first_packet.clone();
     let reader = async move {
         FramedRead::new(rd, message::AirCatFramedCodec::new())
@@ -80,6 +85,10 @@ async fn process_client(
                 ready(!filted)
             })
             .for_each(|p| {
+                {
+                    let mut last = LAST_JSON.write().unwrap();
+                    *last = p.json.clone();
+                }
                 influxdb::send_json(influxdb_addr, hex::encode(&p.mac[1..7]), p.json).map(|_| ())
             })
             .await;
@@ -87,21 +96,23 @@ async fn process_client(
 
     let writer = async move {
         loop {
-            let got = watch_rx.recv().await;
-            //println!("watch recv {:?}", got);
-            if let Some(Message::Control(msg)) = got {
-                let mut bytes: Bytes = Bytes::default();
-                {
-                    //force first_packet drop in this {}
-                    let first_packet = first_packet.clone();
-                    let first = first_packet.read().unwrap();
-                    if let Some(p) = &*first {
-                        bytes = message::gen_packet(p, msg);
+            //let got = watch_rx.recv().await;
+            match watch_rx.recv().await {
+                Some(Message::Control(msg)) => {
+                    let mut bytes: Bytes = Bytes::default();
+                    {
+                        //force first_packet drop in this {}
+                        let first_packet = first_packet.clone();
+                        let first = first_packet.read().unwrap();
+                        if let Some(p) = &*first {
+                            bytes = message::gen_packet(p, msg);
+                        }
+                    }
+                    if !bytes.is_empty() {
+                        let _ = wr.write_all(bytes.bytes()).await;
                     }
                 }
-                if !bytes.is_empty() {
-                    let _ = wr.write_all(bytes.bytes()).await;
-                }
+                _ => {}
             }
         }
     };

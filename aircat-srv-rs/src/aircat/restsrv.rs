@@ -1,4 +1,4 @@
-use crate::aircat::aircatsrv::{Config, Message};
+use crate::aircat::aircatsrv::{Config, Message, LAST_JSON};
 
 use hyper::{
     body,
@@ -40,7 +40,11 @@ pub async fn run_rest_srv(c: &Config, tx: Sender<Message>) -> Result<(), StdErro
 
 async fn handler(req: Request<Body>, mut tx: Sender<Message>) -> Result<Response<Body>, StdError> {
     match (req.method(), req.uri().path()) {
-        (&Method::GET, "/v1/aircat") => Ok(Response::new(Body::from("200 OK"))),
+        (&Method::GET, "/v1/aircat") => {
+            let last = LAST_JSON.read().unwrap();
+            //let bytes = bytes::Bytes::from((*last).clone());
+            Ok(Response::new(Body::from((*last).clone())))
+        }
 
         (&Method::PUT, "/v1/aircat") => {
             let _ = tx

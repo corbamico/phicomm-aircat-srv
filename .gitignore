@@ -16,5 +16,10 @@
 .vscode
 release/
 
+# Binaries for rust
 target/
 *.lock
+
+# Binaries for dotnet
+bin/
+obj/

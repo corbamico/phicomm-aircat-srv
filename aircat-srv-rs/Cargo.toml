@@ -21,3 +21,4 @@ bytes = "0.5"
 hex="0.4"
 
 hyper = "0.13"
+lazy_static = "1.4.0"
