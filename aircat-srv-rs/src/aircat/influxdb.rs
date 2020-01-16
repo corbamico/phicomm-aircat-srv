@@ -10,10 +10,11 @@ pub async fn send_json<T: AsRef<str>, U: AsRef<str>>(
     mac: T,
     json: Bytes,
 ) -> Result<(), Box<(dyn std::error::Error + std::marker::Send + std::marker::Sync + 'static)>> {
+    let uri = format!("http://{}/v1/aircat", addr.as_ref());
     let body = json2body(mac, json)?;
     let req = Request::builder()
         .method(Method::POST)
-        .uri(addr.as_ref())
+        .uri(uri)
         .body(Body::from(body))?;
     Client::new().request(req).await?;
     Ok(())

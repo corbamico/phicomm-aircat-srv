@@ -2,10 +2,10 @@ use crate::aircat::influxdb;
 use crate::aircat::message;
 use bytes::{Buf, Bytes};
 
-use futures::future::{ready, select};
-use futures_util::future::FutureExt;
-use futures_util::stream::StreamExt;
-use pin_utils::pin_mut;
+use futures::{
+    future::{ready, select},
+    pin_mut, stream, FutureExt, StreamExt,
+};
 
 use hex;
 use serde::{Deserialize, Serialize};
@@ -63,27 +63,21 @@ async fn process_client(
 ) {
     let (rd, mut wr) = socket.split();
     let first_packet: Arc<RwLock<Option<message::AirCatPacket>>> = Arc::new(Default::default());
-    let first_packet_clone = first_packet.clone();
+    let first_packet_writer = first_packet.clone();
+
     let reader = async move {
         FramedRead::new(rd, message::AirCatFramedCodec::new())
-            .take_while(|p| futures::future::ready(p.is_ok()))
-            .filter_map(|p| {
-                //println!("[debug]filter_map,parameter={:?}", p);
-                ready(p.ok())
-            })
-            .filter(|p| {
-                let filted = p.msg_type == 4 && !p.json.is_empty();
-                {
-                    //force first_packet_clone drop in this
-                    //Store first packet.
-                    let first = first_packet_clone.read().unwrap();
-                    if (*first).is_none() {
-                        let mut first = first_packet_clone.write().unwrap();
-                        *first = Some(p.clone());
-                    }
+            .take_while(|p| futures::future::ready(p.is_ok())) //disconnect client if there is fault packet
+            .filter_map(|p| ready(p.ok())) //map to Result<AirCatPacket> to AirCatPacket
+            .zip(stream::iter(vec![true]).chain(stream::repeat(false))) //we record first packet for mac/fixed_device information
+            .map(|(p, is_first)| {
+                if is_first {
+                    let mut first = first_packet_writer.write().unwrap();
+                    *first = Some(p.clone());
                 }
-                ready(!filted)
+                p
             })
+            .filter(|p| ready(!(p.msg_type == 4 && !p.json.is_empty())))
             .for_each(|p| {
                 {
                     let mut last = LAST_JSON.write().unwrap();
@@ -102,7 +96,7 @@ async fn process_client(
                     let mut bytes: Bytes = Bytes::default();
                     {
                         //force first_packet drop in this {}
-                        let first_packet = first_packet.clone();
+                        //let first_packet_writer = first_packet.clone();
                         let first = first_packet.read().unwrap();
                         if let Some(p) = &*first {
                             bytes = message::gen_packet(p, msg);
