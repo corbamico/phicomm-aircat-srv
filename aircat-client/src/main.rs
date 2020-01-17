@@ -15,16 +15,9 @@ use bytes::Bytes;
 
 #[tokio::main]
 async fn main() {
-    static _PACKET: [u8; 34] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0xBB, 0xCC, 0xDD, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x02, 0xFF, 0x23,
-        0x45, 0x4E, 0x44, 0x23,
-    ];
-    static PACKET_JSON: [u8; 35] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0xBB, 0xCC, 0xDD, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x04, 0x45, 0xFF,
-        0x23, 0x45, 0x4E, 0x44, 0x23,
-    ];
+    static _ACTIVE : [u8; 34] = *b"\xaa\x0f\x01\x88\x0c29\x8f\x0b\0\0\0\0\0\0\0\0\xb0\xf8\x93#\xc0\x88\0\x03\0\0\x01\xff#END#";
+    static _REPORT : [u8; 110]= *b"\xaa\x0f\x01\x88\x0c29\x8f\x0b\0\0\0\0\0\0\0\0\xb0\xf8\x93#\xc0\x88\0O\0\0\x04{ \"humidity\": \"46.15\", \"temperature\": \"24.68\", \"value\": \"20\", \"hcho\": \"30\" }\xff#END#";
+
     let mut stream = TcpStream::connect("127.0.0.1:9000").await.unwrap();
     let (rd, wr) = stream.split();
     println!("[Device]Connect to 217.0.0.1:9000");
@@ -33,7 +26,7 @@ async fn main() {
 
     let writer = interval
         .map(move |_inst| {
-            let b = Bytes::from(&PACKET_JSON[..]);
+            let b = Bytes::from(&_REPORT[..]);
             println!("[Device]Sending {:?}", b);
             Ok(b)
         })

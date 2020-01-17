@@ -66,12 +66,10 @@ impl Decoder for AirCatFramedCodec {
     fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<AirCatPacket>> {
         if src.len() <= 0 {
             //wait read more from FramedRead...
-            //src.reserve(AirCatPacket::MAX_PACKET_LENGTH);
             Ok(None)
         } else {
             //always eat all bytes in read buffer.
             let bytes_mut = src.split_to(src.len());
-            //src.reserve(AirCatPacket::MAX_PACKET_LENGTH);
             AirCatPacket::from(bytes_mut).map(Some)
         }
     }
