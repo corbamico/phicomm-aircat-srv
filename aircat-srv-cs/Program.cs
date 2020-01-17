@@ -1,14 +1,15 @@
-﻿using System;
+﻿using System.Threading.Tasks;
 
 namespace aircat_srv_cs
 {
     class Program
     {
-        static async System.Threading.Tasks.Task Main(string[] args)
+        static void Main(string[] args)
         {
             Config conf = Config.loadConfig("config.json");
             AircatSrv aircatsrv = new AircatSrv(conf);
-            await aircatsrv.RunAsync().ConfigureAwait(false);
+            RestSrv restsrv = new RestSrv(conf);
+            Task.WaitAny(aircatsrv.RunAsync(), restsrv.RunAsync());
         }
     }
 }

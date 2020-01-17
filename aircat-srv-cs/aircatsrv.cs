@@ -7,27 +7,31 @@ namespace aircat_srv_cs
     class AircatSrv
     {
         Config _config;
+        static AirCatPacket _last;
+
+        public static AirCatPacket LastPacket { get => _last; set => _last = value; }
+
         public AircatSrv(Config conf) => _config = conf;
         public async Task RunAsync()
         {
-            if (!(this._config is null))
+            if (this._config is null)
             {
-                IPEndPoint p = IPEndPoint.Parse(this._config.ServerAddr);
-                TcpListener listener = new TcpListener(p);
-                System.Console.WriteLine("aircat run at {0}", p.ToString());
-                listener.Start();
-                while (true)
+                throw new System.ArgumentNullException(nameof(this._config));
+            }
+            IPEndPoint p = IPEndPoint.Parse(this._config.ServerAddr);
+            TcpListener listener = new TcpListener(p);
+            System.Console.WriteLine("aircat run at {0}", p.ToString());
+            listener.Start();
+            while (true)
+            {
+                TcpClient client = await listener.AcceptTcpClientAsync();
+                AircatDevice conn = new AircatDevice(client, _config.InfluxdbServer);
+                var task = conn.RunAsync();
+                if (task.IsFaulted)
                 {
-                    TcpClient client = await listener.AcceptTcpClientAsync();
-                    AircatDevice conn = new AircatDevice(client, _config.InfluxdbServer);
-                    var task = conn.RunAsync();
-                    if (task.IsFaulted)
-                    {
-                        task.Wait();
-                    }
+                    task.Wait();
                 }
             }
-            throw new System.ArgumentNullException(nameof(this._config));
             //:-) non-stop
             //listener.Stop();
         }
@@ -74,11 +78,18 @@ namespace aircat_srv_cs
             using (var stream = _client.GetStream())
                 while ((nRead = await stream.ReadAsync(buffer, 0, 256).ConfigureAwait(false)) != 0)
                 {
-                    var json = AirCatPacket.From(buffer, nRead)?.ToInfluxLine();
-                    if (json != null)
+                    try
                     {
-                        await InfluxDb.SendJson(_influxAddr, json);
+                        var packet = AirCatPacket.From(buffer, nRead);
+                        AircatSrv.LastPacket = packet;
+                        var line = packet.ToInfluxLine();
+                        var task = InfluxDb.SendCmdLine(_influxAddr, line);
+                        if (task.IsFaulted)
+                        {
+                            task.Wait();
+                        }
                     }
+                    catch { }
                 }
         }
     }
