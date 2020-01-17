@@ -54,7 +54,7 @@ namespace aircat_srv_cs
                 string mac = String.Concat(Array.ConvertAll(this.mac, x => x.ToString("x2")));
                 string json = System.Text.Encoding.Default.GetString(this.Json);
                 AirMeasure air = System.Text.Json.JsonSerializer.Deserialize<AirMeasure>(json);
-                return String.Format("aircat,mac=\"%s\" humidity=%s,temperature=%s,value=%s,hcho=%s", mac, air.humidity, air.temperature, air.value, air.hcho);
+                return String.Format($"aircat,mac=\"{mac}\" humidity={air.humidity},temperature={air.temperature},value={air.value},hcho={air.hcho}");
             }
             catch (Exception)
             {

@@ -8,8 +8,10 @@ namespace aircat_srv_cs
     {
         Config _config;
         static AirCatPacket _last;
+        static AircatDevice _lastDevice;
 
-        public static AirCatPacket LastPacket { get => _last; set => _last = value; }
+        internal static AirCatPacket LastPacket { get => _last; set => _last = value; }
+        internal static AircatDevice LastDevice { get => _lastDevice; set => _lastDevice = value; }
 
         public AircatSrv(Config conf) => _config = conf;
         public async Task RunAsync()
@@ -26,6 +28,7 @@ namespace aircat_srv_cs
             {
                 TcpClient client = await listener.AcceptTcpClientAsync();
                 AircatDevice conn = new AircatDevice(client, _config.InfluxdbServer);
+                AircatSrv.LastDevice = conn;
                 var task = conn.RunAsync();
                 if (task.IsFaulted)
                 {
@@ -48,7 +51,11 @@ namespace aircat_srv_cs
             _influxAddr = influxAddr;
             _addr = _client.Client.RemoteEndPoint.ToString();
         }
-
+        public async Task SendBytesAsync(byte[] bytes,int length)
+        {
+            //TODO gen_packet according to mac,json,#END#, etc.
+            await _client.GetStream()?.WriteAsync(bytes,0,length);
+        }
         public async Task RunAsync()
         {
             System.Console.WriteLine("aircat client connect at {0}", _addr);
@@ -56,6 +63,7 @@ namespace aircat_srv_cs
             try
             {
                 await task;
+
             }
             catch (System.Exception)
             {
@@ -87,9 +95,11 @@ namespace aircat_srv_cs
                         if (task.IsFaulted)
                         {
                             task.Wait();
-                        }
+                        }                        
                     }
-                    catch { }
+                    catch(System.Exception) {
+                        //System.Console.WriteLine("aircat client report exception: {0}", ex);
+                     }
                 }
         }
     }

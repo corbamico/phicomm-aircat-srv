@@ -41,7 +41,19 @@ namespace aircat_srv_cs
                         res.StatusCode = (int)HttpStatusCode.OK;
                         break;
                     case ("PUT", "/v1/aircat"):
-                        res.StatusCode = (int)HttpStatusCode.NoContent;
+                        if (req.HasEntityBody){
+                            using(var stream=req.InputStream)
+                            using(var reader=new System.IO.StreamReader(stream))
+                            {
+                                var body = await reader.ReadToEndAsync();
+                                var content = System.Text.Encoding.ASCII.GetBytes(body);
+                                await AircatSrv.LastDevice?.SendBytesAsync(content,content.Length);
+                            }                            
+                            res.StatusCode = (int)HttpStatusCode.NoContent;
+                        }
+                        else{
+                            res.StatusCode = (int)HttpStatusCode.BadRequest;
+                        }
                         break;
                     default:
                         res.StatusCode = (int)HttpStatusCode.NotFound;
