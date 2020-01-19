@@ -71,5 +71,5 @@ GOOS=linux GOARCH=mipsle go build github.com/corbamico/phicomm-aircat-srv/aircat
 * [x] default dashboard for grafana docker
 * [ ] support more than one device
 * [x] version aircat-srv-rs: rust-lang version
-* [ ] version aircat-srv-cs: dotnet core 3.1 version
+* [x] version aircat-srv-cs: dotnet core 3.1 version
 * [x] version aircat-srv-client: simulate aircat device, sending packet

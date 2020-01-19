@@ -17,6 +17,8 @@ namespace aircat_srv_cs
 
         public byte[] Json { get => json; set => json = value; }
 
+        static byte[] _END_ = { 0xFF, 0x23, 0x45, 0x4E, 0x44, 0x23 };
+        static byte MSGTYPE_CONTROL = 2;
         /*Rawheader show as
            00 01 02 03 04 05 06 07   08  09 10 11  12 13 14 15
         00 -------unknown---------   0B  00 00 00  00 00 00 00
@@ -47,6 +49,20 @@ namespace aircat_srv_cs
             Array.Copy(bytes, begin, air.Json, 0, len - 3);
             return air;
         }
+        public byte[] ToBytes(byte[] json)
+        {
+            var totalLen = json.Length + 34;
+            var result = new byte[totalLen];
+            Array.Copy(this.device_fixed, 0, result, 0, 16);
+            Array.Copy(this.mac, 0, result, 16, this.mac.Length);
+            result[24] = (byte)(json.Length + 3);
+            result[27] = MSGTYPE_CONTROL;
+
+            Array.Copy(json, 0, result, 28, json.Length);
+            Array.Copy(_END_, 0, result, 28 + json.Length, _END_.Length);
+            return result;
+        }
+
         public string ToInfluxLine()
         {
             try

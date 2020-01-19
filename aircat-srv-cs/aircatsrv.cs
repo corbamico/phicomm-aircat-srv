@@ -7,10 +7,10 @@ namespace aircat_srv_cs
     class AircatSrv
     {
         Config _config;
-        static AirCatPacket _last;
+        static AirCatPacket _lastPacket;
         static AircatDevice _lastDevice;
 
-        internal static AirCatPacket LastPacket { get => _last; set => _last = value; }
+        internal static AirCatPacket LastPacket { get => _lastPacket; set => _lastPacket = value; }
         internal static AircatDevice LastDevice { get => _lastDevice; set => _lastDevice = value; }
 
         public AircatSrv(Config conf) => _config = conf;
@@ -38,6 +38,10 @@ namespace aircat_srv_cs
             //:-) non-stop
             //listener.Stop();
         }
+        public static async Task SendContrlToDevice(byte[] json)
+        {
+            await _lastDevice?.SendBytesAsync(_lastPacket?.ToBytes(json));
+        }
     }
     class AircatDevice
     {
@@ -51,10 +55,9 @@ namespace aircat_srv_cs
             _influxAddr = influxAddr;
             _addr = _client.Client.RemoteEndPoint.ToString();
         }
-        public async Task SendBytesAsync(byte[] bytes,int length)
+        public async Task SendBytesAsync(byte[] bytes)
         {
-            //TODO gen_packet according to mac,json,#END#, etc.
-            await _client.GetStream()?.WriteAsync(bytes,0,length);
+            await _client.GetStream()?.WriteAsync(bytes, 0, bytes.Length);
         }
         public async Task RunAsync()
         {
@@ -95,11 +98,12 @@ namespace aircat_srv_cs
                         if (task.IsFaulted)
                         {
                             task.Wait();
-                        }                        
+                        }
                     }
-                    catch(System.Exception) {
+                    catch (System.Exception)
+                    {
                         //System.Console.WriteLine("aircat client report exception: {0}", ex);
-                     }
+                    }
                 }
         }
     }
