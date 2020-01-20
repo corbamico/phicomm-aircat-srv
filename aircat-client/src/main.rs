@@ -1,5 +1,9 @@
-use futures::future::{ready, select};
-use futures::StreamExt;
+use futures::{
+    future::{ready, select},
+    stream,
+    stream::repeat,
+    StreamExt,
+};
 
 use tokio::net::TcpStream;
 use tokio::time::{self, Duration};
@@ -22,16 +26,17 @@ async fn main() {
     let (rd, wr) = stream.split();
     println!("[Device]Connect to 217.0.0.1:9000");
     let wr = FramedWrite::new(wr, BytesCodec::new());
-    let interval = time::interval(Duration::from_secs(2));
+    let interval = time::interval(Duration::from_secs(3));
 
     let writer = interval
-        .map(move |_inst| {
-            let b = Bytes::from(&_REPORT[..]);
+        .zip(stream::iter(vec![Bytes::from(&_ACTIVE[..])]).chain(repeat(Bytes::from(&_REPORT[..]))))
+        .map(move |(_, b)| {
             println!("[Device]Sending {:?}", b);
             Ok(b)
         })
         .forward(wr);
     let reader = FramedRead::new(rd, BytesCodec::new())
+        .take_while(|p| ready(p.is_ok()))
         .map(|x| println!("[Device]Recieve: {:?}", x))
         .collect::<()>();
     select(reader, writer).await;
