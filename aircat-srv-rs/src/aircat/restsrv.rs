@@ -1,4 +1,4 @@
-use crate::aircat::aircatsrv::{Config, Message, LAST_JSON};
+use crate::aircat::aircatsrv::{Config, Message};
 
 use hyper::{
     body,
@@ -10,11 +10,15 @@ use hyper::{
 use std::io::{Error, ErrorKind};
 use std::net::{SocketAddr, ToSocketAddrs};
 
-use tokio::sync::mpsc::Sender;
+use tokio::sync::{mpsc, watch};
 
 type StdError = Box<(dyn std::error::Error + Send + Sync)>;
 
-pub async fn run_rest_srv(c: &Config, tx: Sender<Message>) -> Result<(), StdError> {
+pub async fn run_rest_srv(
+    c: &Config,
+    tx_control: mpsc::Sender<Message>,
+    watch_last_packet: watch::Receiver<Message>,
+) -> Result<(), StdError> {
     let addr: SocketAddr = c
         .RESTServerAddr
         .clone()
@@ -23,11 +27,14 @@ pub async fn run_rest_srv(c: &Config, tx: Sender<Message>) -> Result<(), StdErro
         .ok_or_else(|| Error::from(ErrorKind::InvalidInput))?;
 
     let service = make_service_fn(move |_socket: &AddrStream| {
-        let tx1 = tx.clone();
+        let tx_control = tx_control.clone();
+        let watch_last_packet = watch_last_packet.clone();
         async move {
+            let watch_last_packet = watch_last_packet.clone();
             Ok::<_, StdError>(service_fn(move |req: Request<Body>| {
-                let tx2 = tx1.clone();
-                handler(req, tx2)
+                let tx_control = tx_control.clone();
+                let watch_last_packet = watch_last_packet.clone();
+                handler(req, tx_control, watch_last_packet)
             }))
         }
     });
@@ -38,16 +45,22 @@ pub async fn run_rest_srv(c: &Config, tx: Sender<Message>) -> Result<(), StdErro
     Ok(())
 }
 
-async fn handler(req: Request<Body>, mut tx: Sender<Message>) -> Result<Response<Body>, StdError> {
+async fn handler(
+    req: Request<Body>,
+    mut tx_control: mpsc::Sender<Message>,
+    mut watch_last_packet: watch::Receiver<Message>,
+) -> Result<Response<Body>, StdError> {
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/v1/aircat") => {
-            let last = LAST_JSON.read().unwrap();
-            //let bytes = bytes::Bytes::from((*last).clone());
-            Ok(Response::new(Body::from((*last).clone())))
+            if let Some(Message::LastReport(bytes)) = watch_last_packet.recv().await {
+                Ok(Response::new(Body::from(bytes)))
+            } else {
+                Ok(Response::default())
+            }
         }
 
         (&Method::PUT, "/v1/aircat") => {
-            let _ = tx
+            let _ = tx_control
                 .send(Message::Control(body::to_bytes(req.into_body()).await?))
                 .await;
             Ok(Response::builder()

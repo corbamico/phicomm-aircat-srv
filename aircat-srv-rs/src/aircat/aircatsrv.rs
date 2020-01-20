@@ -3,7 +3,7 @@ use crate::aircat::message;
 use bytes::Bytes;
 
 use futures::{
-    future::{ready, select},
+    future::{join, ready, select},
     pin_mut, FutureExt, StreamExt,
 };
 
@@ -11,10 +11,7 @@ use hex;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-use std::{
-    io,
-    sync::{Arc, RwLock},
-};
+use std::io;
 
 use tokio::{
     self,
@@ -23,33 +20,41 @@ use tokio::{
 };
 use tokio_util::codec::{BytesCodec, FramedRead, FramedWrite};
 
-//TODO:
-//Current, we just record last json reported from device (if there are more than one device)
-lazy_static! {
-    pub static ref LAST_JSON: Arc<RwLock<Bytes>> = Arc::new(Default::default());
-}
-
-pub async fn run_aircat_srv(c: &Config, mut _rx: mpsc::Receiver<Message>) -> io::Result<()> {
+pub async fn run_aircat_srv(
+    c: &Config,
+    rx_control: mpsc::Receiver<Message>,
+    tx_last_packet: watch::Sender<Message>,
+) -> io::Result<()> {
     let mut listener = TcpListener::bind(&c.ServerAddr).await?;
     println!("aircat run at {}", &c.ServerAddr);
 
     //we broadcast all json to every TCP Connection of device, performance issue,
     //need handle if large number device connected.
     let (watch_tx, watch_rx) = watch::channel(Message::Nop);
-    let msg_process = _rx.filter(Message::is_control).for_each(move |msg| {
+    let msg_process = rx_control.filter(Message::is_control).for_each(move |msg| {
         let _ = watch_tx.broadcast(msg);
         ready(())
     });
     tokio::spawn(msg_process);
 
+    let (last_packet_reporter, last_packet_reiever) = mpsc::channel::<Message>(1000);
+    let last_packet_process = last_packet_reiever
+        .filter(Message::is_last_report)
+        .for_each(move |msg| {
+            let _ = tx_last_packet.broadcast(msg);
+            ready(())
+        });
+    tokio::spawn(last_packet_process);
+
     loop {
         let (socket, client_addr) = listener.accept().await?;
         let influxdb_addr: String = c.InfluxdbServer.clone();
         let watch_rx = watch_rx.clone();
+        let last_packet_reporter = last_packet_reporter.clone();
 
         tokio::spawn(async move {
             println!("aircat client connect at {}", client_addr);
-            process_client(socket, &influxdb_addr, watch_rx).await;
+            process_client(socket, &influxdb_addr, watch_rx, last_packet_reporter).await;
             println!("aircat client disconnect, which at {}", client_addr);
         });
     }
@@ -59,6 +64,7 @@ async fn process_client(
     mut socket: TcpStream,
     influxdb_addr: &str,
     watch_rx: watch::Receiver<Message>,
+    last_packet_reporter: mpsc::Sender<Message>,
 ) {
     let (rd, wr) = socket.split();
     //step 1. we need first packet to record fixed_device field and mac field.
@@ -67,16 +73,22 @@ async fn process_client(
         .filter_map(|p| ready(p.ok()))
         .into_future()
         .await;
-
-    //step 2. read from aircat device report, and record LAST_JSON for restsrv.rs use, and send it to influxdb
+    //step 2. read from aircat device report, and report LAST_JSON to last_packet_process
+    //        for restsrv.rs use, and send it to influxdb
     let reader = stream
         .filter(|p| ready(p.msg_type == 4 && !p.json.is_empty()))
-        .for_each(|p| {
-            {
-                let mut last = LAST_JSON.write().unwrap();
-                *last = p.json.clone();
-            }
-            influxdb::send_json(influxdb_addr, hex::encode(&p.mac[1..7]), p.json).map(|_| ())
+        .map(move |p| (last_packet_reporter.clone(), p))
+        .for_each(|(mut reporter, p)| {
+            let json = p.json.clone();
+            let sender = async move {
+                let _ =
+                    influxdb::send_json(influxdb_addr, hex::encode(&p.mac[1..7]), p.json.clone())
+                        .await;
+            };
+            let report = async move {
+                let _ = reporter.send(Message::LastReport(json)).await;
+            };
+            join(sender, report).map(|_| ())
         });
     //step 3. read from watch_rx(which sent by restsrv, and is Control message), then forward to aircat device tcp session.
     let writer = watch_rx
@@ -113,11 +125,18 @@ pub fn load_config<T: AsRef<str>>(file: T) -> io::Result<Config> {
 pub enum Message {
     Nop,
     Control(Bytes),
+    LastReport(Bytes),
 }
 impl Message {
     fn is_control(&self) -> impl futures::Future<Output = bool> {
         match self {
             Message::Control(_) => ready(true),
+            _ => ready(false),
+        }
+    }
+    fn is_last_report(&self) -> impl futures::Future<Output = bool> {
+        match self {
+            Message::LastReport(_) => ready(true),
             _ => ready(false),
         }
     }
