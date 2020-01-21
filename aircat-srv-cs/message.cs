@@ -8,7 +8,7 @@ namespace aircat_srv_cs
 {
     class AirCatPacket
     {
-        const int MIN_PACKET_LENGTH = 33;
+        const int MIN_PACKET_LENGTH = 34;
         const int MAX_PACKET_LENGTH = 156;
         byte[] device_fixed;
         byte msg_type;

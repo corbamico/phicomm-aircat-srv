@@ -16,9 +16,9 @@ type rawmessage struct {
 //sizeof rawheader = 16 + 12 = 28
 const (
 	sizeRawHeader     = 28
-	sizeActiveMessage = 33
-	sizeMinMessage    = 33
-	sizeMaxMessage    = 150 //we guess
+	sizeActiveMessage = 34
+	sizeMinMessage    = 34
+	sizeMaxMessage    = 156 //we guess
 )
 
 /*Rawheader show as

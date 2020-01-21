@@ -19,7 +19,7 @@ pub struct AirCatPacket {
 }
 
 impl AirCatPacket {
-    const MIN_PACKET_LENGTH: usize = 33;
+    const MIN_PACKET_LENGTH: usize = 34;
     const _MAX_PACKET_LENGTH: usize = 156;
     fn from(src: BytesMut) -> io::Result<AirCatPacket> {
         let b = src.bytes();
