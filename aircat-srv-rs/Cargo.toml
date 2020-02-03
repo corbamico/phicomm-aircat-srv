@@ -7,10 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "0.2", features = ["tcp","macros","net","rt-threaded","stream"] }
+tokio = { version = "0.2", features = ["tcp","net","macros","rt-threaded","stream"] }
 tokio-util = { version = "0.2", features = ["codec"] }
 
-futures = "0.3.1"
+futures = "0.3"
 
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -18,4 +18,5 @@ bytes = "0.5"
 hex="0.4"
 
 hyper = "0.13"
-lazy_static = "1.4.0"
+env_logger="0.7"
+log="0.4"

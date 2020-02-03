@@ -12,6 +12,8 @@ use std::net::{SocketAddr, ToSocketAddrs};
 
 use tokio::sync::{mpsc, watch};
 
+use log::{error, info};
+
 type StdError = Box<(dyn std::error::Error + Send + Sync)>;
 
 pub async fn run_rest_srv(
@@ -40,7 +42,7 @@ pub async fn run_rest_srv(
     });
 
     let server = Server::bind(&addr).serve(service);
-    println!("restsrv run at {}", addr);
+    info!("restsrv run at {}", addr);
     server.await?;
     Ok(())
 }
@@ -62,7 +64,8 @@ async fn handler(
         (&Method::PUT, "/v1/aircat") => {
             let _ = tx_control
                 .send(Message::Control(body::to_bytes(req.into_body()).await?))
-                .await;
+                .await
+                .map_err(|e| error!("send http json body to aircatsrv error: {:?}", e));
             Ok(Response::builder()
                 .status(StatusCode::NO_CONTENT)
                 .body(Body::empty())

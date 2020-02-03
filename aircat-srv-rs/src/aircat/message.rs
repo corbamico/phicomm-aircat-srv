@@ -64,7 +64,7 @@ impl Decoder for AirCatFramedCodec {
     type Error = io::Error;
     /// We always read whole one packet from src: BytesMut    
     fn decode(&mut self, src: &mut BytesMut) -> io::Result<Option<AirCatPacket>> {
-        if src.len() <= 0 {
+        if src.is_empty() {
             //wait read more from FramedRead...
             Ok(None)
         } else {

@@ -98,6 +98,7 @@ func (client *aircatDevice) run() {
 		len, err := client.conn.Read(buf)
 		var msg message
 		if err != nil {
+			log.Printf("Cient disconnected at %s, with error (%s)\n", client.conn.RemoteAddr().String(), err)
 			break
 		}
 		if len < sizeMinMessage || len > sizeMaxMessage {

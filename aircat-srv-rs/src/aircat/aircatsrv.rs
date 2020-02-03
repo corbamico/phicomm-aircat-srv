@@ -7,9 +7,9 @@ use futures::{
     pin_mut, FutureExt, StreamExt,
 };
 
-use hex;
+//use hex;
 use serde::{Deserialize, Serialize};
-use serde_json;
+//use serde_json;
 
 use std::io;
 
@@ -20,13 +20,15 @@ use tokio::{
 };
 use tokio_util::codec::{BytesCodec, FramedRead, FramedWrite};
 
+use log::{error, info, warn};
+
 pub async fn run_aircat_srv(
     c: &Config,
     rx_control: mpsc::Receiver<Message>,
     tx_last_packet: watch::Sender<Message>,
 ) -> io::Result<()> {
     let mut listener = TcpListener::bind(&c.ServerAddr).await?;
-    println!("aircat run at {}", &c.ServerAddr);
+    info!("aircat run at {}", &c.ServerAddr);
 
     //we broadcast all json to every TCP Connection of device, performance issue,
     //need handle if large number device connected.
@@ -53,9 +55,9 @@ pub async fn run_aircat_srv(
         let last_packet_reporter = last_packet_reporter.clone();
 
         tokio::spawn(async move {
-            println!("aircat client connect at {}", client_addr);
+            info!("aircat client connect at {}", client_addr);
             process_client(socket, &influxdb_addr, watch_rx, last_packet_reporter).await;
-            println!("aircat client disconnect, which at {}", client_addr);
+            info!("aircat client disconnect, which at {}", client_addr);
         });
     }
 }
@@ -83,10 +85,14 @@ async fn process_client(
             let sender = async move {
                 let _ =
                     influxdb::send_json(influxdb_addr, hex::encode(&p.mac[1..7]), p.json.clone())
-                        .await;
+                        .await
+                        .map_err(|e| warn!("send to influxdb error: {:?}", e));
             };
             let report = async move {
-                let _ = reporter.send(Message::LastReport(json)).await;
+                let _ = reporter
+                    .send(Message::LastReport(json))
+                    .await
+                    .map_err(|e| error!("report last measure error: {:?}", e));
             };
             join(sender, report).map(|_| ())
         });
