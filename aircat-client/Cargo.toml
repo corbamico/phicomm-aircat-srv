@@ -1,14 +1,15 @@
 [package]
 name = "aircat-client"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["corbamico <corbamico@163.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "0.2.9", features = ["full"] }
+tokio = { version = "0.2", features = ["full"] }
 tokio-util =  { version = "0.2", features = ["full"] }
-futures-util =  { version = "0.3.1", features = ["futures-sink","sink"] }
-futures = "0.3.1"
+futures-util =  { version = "0.3", features = ["futures-sink","sink"] }
+futures = "0.3"
 bytes = "0.5"
+clap = "2.33"

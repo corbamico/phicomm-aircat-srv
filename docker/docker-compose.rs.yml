@@ -1,0 +1,28 @@
+version: '3.7'
+services: 
+  aircat-srv-rs:
+    build:
+      context: ..
+      dockerfile: rust.Dockerfile    
+    image: aircat-srv-rs
+    container_name: aircat-srv-rs
+    ports: 
+      - "8080:8080"
+      - "9000:9000"
+  influxdb:
+    image: influxdb
+    container_name: influxdb
+    environment: 
+      INFLUXDB_DB: "aircat"
+    volumes: 
+      - ./influxdb:/var/lib/influxdb
+    ports:
+      - "8086:8086"      
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    volumes: 
+      - ./grafana/provisioning:/etc/grafana/provisioning/
+    ports: 
+      - "3000:3000"
+    
